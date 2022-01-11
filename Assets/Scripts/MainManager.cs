@@ -1,3 +1,4 @@
+using System.IO;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,11 +7,13 @@ using UnityEngine.UI;
 
 public class MainManager : MonoBehaviour
 {
+
     public Brick BrickPrefab;
     public int LineCount = 6;
     public Rigidbody Ball;
 
     public Text ScoreText;
+    public Text BestScoreText;
     public GameObject GameOverText;
     
     private bool m_Started = false;
@@ -18,7 +21,10 @@ public class MainManager : MonoBehaviour
     
     private bool m_GameOver = false;
 
-    
+    public string bestScoreUserID;
+    public int bestScore;
+
+
     // Start is called before the first frame update
     void Start()
     {
@@ -36,6 +42,10 @@ public class MainManager : MonoBehaviour
                 brick.onDestroyed.AddListener(AddPoint);
             }
         }
+
+        LoadBestScore();
+        BestScoreText.text = "Best Score: " + bestScoreUserID + " : " + bestScore;
+
     }
 
     private void Update()
@@ -57,7 +67,7 @@ public class MainManager : MonoBehaviour
         {
             if (Input.GetKeyDown(KeyCode.Space))
             {
-                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+                SceneManager.LoadScene(1);
             }
         }
     }
@@ -72,5 +82,49 @@ public class MainManager : MonoBehaviour
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
+        if (m_Points > bestScore)
+        {
+            BestScoreText.text = "Best Score: " + MenuManager.Instance.userID + " : " + m_Points;
+            SaveBestScore();
+        }
+        else
+        {
+            BestScoreText.text = "Best Score: " + bestScoreUserID + " : " + bestScore;
+        }
+        
     }
+
+
+    [System.Serializable]
+    class SaveData
+    {
+        public string userID;
+        public int score;
+    }
+
+    public void SaveBestScore()
+    {
+        SaveData data = new SaveData();
+        data.userID = MenuManager.Instance.userID;
+        data.score = m_Points;
+
+        string json = JsonUtility.ToJson(data);
+
+        File.WriteAllText(Application.persistentDataPath + "/savefile.json", json);
+    }
+
+    public void LoadBestScore()
+    {
+        string path = Application.persistentDataPath + "/savefile.json";
+        if (File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            SaveData data = JsonUtility.FromJson<SaveData>(json);
+            //TeamColor = data.TeamColor;
+            bestScore = data.score;
+            bestScoreUserID = data.userID;
+
+        }
+    }
+
 }
